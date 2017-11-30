@@ -42,7 +42,7 @@ def max_pool_2x2(x):
 
 def preprocess_img(img):
     # RGB编码转为OpenCV的BGR编码
-    img=cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+    # img=cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
     # 压缩图像至80*80
     img=cv2.resize(img, (80, 80))
     # 转换为灰阶图像
@@ -112,10 +112,11 @@ def trainNetwork(s, readout, h_fc1, sess):
     
     # 得到初始状态，预处理图像压缩至80*80*4灰阶
     img, _, _ = game_state.frame_step(do_nothing)
+    show_img(img)
     img=preprocess_img(img)
     state = np.stack((img, img, img, img), axis=2)
 
-    # saving and loading networks
+    # 保存、加载网络
     saver = tf.train.Saver()
     sess.run(tf.initialize_all_variables())
     checkpoint = tf.train.get_checkpoint_state("saved_networks")
@@ -125,7 +126,7 @@ def trainNetwork(s, readout, h_fc1, sess):
     else:
         print("Could not find old network weights")
 
-    # start training
+    # 开始训练
     epsilon = INITIAL_EPSILON
     t = 0
     while True:
@@ -198,27 +199,26 @@ def trainNetwork(s, readout, h_fc1, sess):
             saver.save(sess, 'saved_networks/' + GAME + '-dqn', global_step = t)
 
         # print info
-        state = ""
+        phase = ""
         if t <= OBSERVE:
-            state = "observe"
+            phase = "observe"
         elif t > OBSERVE and t <= OBSERVE + EXPLORE:
-            state = "explore"
+            phase = "explore"
         else:
-            state = "train"
+            phase = "train"
 
-        print("TIMESTEP", t,
-              "| STATE", state,
-              "| EPSILON", epsilon,
-              "| ACTION", action_index,
-              "| REWARD", reward,
-              "| Q_MAX %e" % np.max(readout_t))
-        # write info to files
-        '''
-        if t % 10000 <= 100:
-            a_file.write(",".join([str(x) for x in readout_t]) + '\n')
-            h_file.write(",".join([str(x) for x in h_fc1.eval(feed_dict={s:[s_t]})[0]]) + '\n')
-            cv2.imwrite("logs_tetris/frame" + str(t) + ".png", x_t1)
-        '''
+        print("timestep", t,
+              " phase", phase,
+              " epsilon", epsilon,
+              " action", action_index,
+              " reward", reward,
+              " q_max %e" % np.max(readout_t))
+        
+        ### write info to files
+        # if t % 10000 <= 100:
+        #     a_file.write(",".join([str(x) for x in readout_t]) + '\n')
+        #     h_file.write(",".join([str(x) for x in h_fc1.eval(feed_dict={s:[s_t]})[0]]) + '\n')
+        #     cv2.imwrite("logs_tetris/frame" + str(t) + ".png", x_t1)
 
 if __name__ == "__main__":
     sess = tf.InteractiveSession()
